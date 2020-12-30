@@ -119,7 +119,7 @@ static int const RCTVideoUnset = -1;
     _playWhenInactive = false;
     _pictureInPicture = false;
     _ignoreSilentSwitch = @"inherit"; // inherit, ignore, obey
-    _mixWithOthers = @"inherit"; // inherit, mix, duck
+    _mixWithOthers = @"inherit"; // inherit, mix, duck, silence
 #if TARGET_OS_IOS
     _restoreUserInterfaceForPIPStopCompletionHandler = NULL;
 #endif
@@ -921,6 +921,23 @@ static int const RCTVideoUnset = -1;
 - (void)setMixWithOthers:(NSString *)mixWithOthers
 {
   _mixWithOthers = mixWithOthers;
+  AVAudioSession *session = [AVAudioSession sharedInstance];
+  AVAudioSessionCategory category = AVAudioSessionCategoryAmbient;
+  AVAudioSessionCategoryOptions options = nil;
+
+  if([_mixWithOthers isEqualToString:@"mix"]) {
+    options = AVAudioSessionCategoryOptionMixWithOthers;
+  } else if([_mixWithOthers isEqualToString:@"duck"]) {
+    options = AVAudioSessionCategoryOptionDuckOthers;
+  } else if([_mixWithOthers isEqualToString:@"silence"]) {
+    category = AVAudioSessionCategoryPlayback;
+  }
+  if (category != nil && options != nil) {
+    [session setCategory:category withOptions:options error:nil];
+  } else if (category == nil && options != nil) {
+    [session setCategory:session.category withOptions:options error:nil];
+  }
+
   [self applyModifiers];
 }
 
@@ -930,30 +947,6 @@ static int const RCTVideoUnset = -1;
     [_player pause];
     [_player setRate:0.0];
   } else {
-    AVAudioSession *session = [AVAudioSession sharedInstance];
-    AVAudioSessionCategory category = nil;
-    AVAudioSessionCategoryOptions options = nil;
-
-    if([_ignoreSilentSwitch isEqualToString:@"ignore"]) {
-      category = AVAudioSessionCategoryPlayback;
-    } else if([_ignoreSilentSwitch isEqualToString:@"obey"]) {
-      category = AVAudioSessionCategoryAmbient;
-    }
-
-    if([_mixWithOthers isEqualToString:@"mix"]) {
-      options = AVAudioSessionCategoryOptionMixWithOthers;
-    } else if([_mixWithOthers isEqualToString:@"duck"]) {
-      options = AVAudioSessionCategoryOptionDuckOthers;
-    }
-
-    if (category != nil && options != nil) {
-      [session setCategory:category withOptions:options error:nil];
-    } else if (category != nil && options == nil) {
-      [session setCategory:category error:nil];
-    } else if (category == nil && options != nil) {
-      [session setCategory:session.category withOptions:options error:nil];
-    }
-
     if (@available(iOS 10.0, *) && !_automaticallyWaitsToMinimizeStalling) {
       [_player playImmediatelyAtRate:_rate];
     } else {
