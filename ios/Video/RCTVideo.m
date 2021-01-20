@@ -925,6 +925,9 @@ static int const RCTVideoUnset = -1;
   AVAudioSessionCategory category = AVAudioSessionCategoryAmbient;
   AVAudioSessionCategoryOptions options = nil;
 
+  if([_ignoreSilentSwitch isEqualToString:@"ignore"]) {
+    category = AVAudioSessionCategoryPlayback;
+  }
   if([_mixWithOthers isEqualToString:@"mix"]) {
     options = AVAudioSessionCategoryOptionMixWithOthers;
   } else if([_mixWithOthers isEqualToString:@"duck"]) {
