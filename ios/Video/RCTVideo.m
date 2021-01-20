@@ -922,23 +922,23 @@ static int const RCTVideoUnset = -1;
 {
   _mixWithOthers = mixWithOthers;
   AVAudioSession *session = [AVAudioSession sharedInstance];
-  AVAudioSessionCategory category = AVAudioSessionCategoryAmbient;
-  AVAudioSessionCategoryOptions options = nil;
+  if ([_mixWithOthers isEqualToString:@"silence"]) {
+    [session setCategory:AVAudioSessionCategoryPlayback withOptions:nil error:nil];
+  } else if (![_mixWithOthers isEqualToString:@"inherit"] || ![_ignoreSilentSwitch isEqualToString:@"inherit"]) {
+    AVAudioSessionCategory category = AVAudioSessionCategoryPlayback;
+    AVAudioSessionCategoryOptions options = AVAudioSessionCategoryOptionMixWithOthers;
 
-  if([_ignoreSilentSwitch isEqualToString:@"ignore"]) {
-    category = AVAudioSessionCategoryPlayback;
-  }
-  if([_mixWithOthers isEqualToString:@"mix"]) {
-    options = AVAudioSessionCategoryOptionMixWithOthers;
-  } else if([_mixWithOthers isEqualToString:@"duck"]) {
-    options = AVAudioSessionCategoryOptionDuckOthers;
-  } else if([_mixWithOthers isEqualToString:@"silence"]) {
-    category = AVAudioSessionCategoryPlayback;
-  }
-  if (category != nil && options != nil) {
-    [session setCategory:category withOptions:options error:nil];
-  } else if (category == nil && options != nil) {
-    [session setCategory:session.category withOptions:options error:nil];
+    if ([_mixWithOthers isEqualToString:@"mix"]) {
+      options = AVAudioSessionCategoryOptionMixWithOthers;
+    } else if ([_mixWithOthers isEqualToString:@"duck"]) {
+      options = AVAudioSessionCategoryOptionDuckOthers;
+    }
+    
+    if (category != nil && options != nil) {
+      [session setCategory:category withOptions:options error:nil];
+    } else if (category != nil && options == nil) {
+      [session setCategory:category error:nil];
+    }
   }
 
   [self applyModifiers];
